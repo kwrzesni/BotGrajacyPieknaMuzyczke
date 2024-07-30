@@ -8,6 +8,20 @@ from discord.ext import commands
 bot = discord.Bot()
 channel_to_respond = {}
 
+
+def create_embed_from_song(song, title, author):
+  seconds = song.length // 1000
+  embed = discord.Embed(
+    title=title,
+    description=f"[{song.title}]({song.uri})",
+    color=discord.Colour.blurple(),  # Pycord provides a class with default colors you can choose from
+  )
+  embed.set_image(url=song.artwork)
+  embed.add_field(name="Requested by", value=f"{author.mention}", inline=True)
+  embed.add_field(name="Duration", value=f"{seconds//60}:{seconds%60:02d}", inline=True)
+  return embed
+
+
 async def connect_nodes():
   """Connect to our Lavalink nodes."""
   await bot.wait_until_ready()
@@ -44,13 +58,13 @@ async def play(ctx: discord.ApplicationContext, search: str):
     vc = await ctx.author.voice.channel.connect(cls=wavelink.Player)
     vc.autoplay = wavelink.AutoPlayMode.partial
     await vc.play(song)
-    await ctx.send_response(f"playing {song.title}")
+    await ctx.send_response("", embed=create_embed_from_song(song, "Playing", ctx.author))
   elif not vc.playing:
     await vc.play(song)
-    await ctx.send_response(f"playing {song.title}")
+    await ctx.send_response("", embed=create_embed_from_song(song, "Playing", ctx.author))
   else:
     vc.queue.put(song)
-    await ctx.send_response(f"{song.title} added to queue")
+    await ctx.send_response("", embed=create_embed_from_song(song, "Queued", ctx.author))
 
 
 @bot.slash_command(name="pause")
