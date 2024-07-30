@@ -12,6 +12,7 @@ plugins:
     # The clients to use for track loading. See below for a list of valid clients.
     # Clients are queried in the order they are given (so the first client is queried first and so on...)
     clients:
+      - TVHTML5EMBEDDED
       - MUSIC
       - ANDROID_TESTSUITE
       - WEB
@@ -31,9 +32,9 @@ plugins:
       playback: false
     TVHTML5EMBEDDED:
       # The below config disables everything except playback for this client.
-      playlistLoading: false # Disables loading of playlists and mixes for this client.
-      videoLoading: false # Disables loading of videos for this client (playback is still allowed).
-      searching: false # Disables the ability to search for videos for this client.
+      playlistLoading: true # Disables loading of playlists and mixes for this client.
+      videoLoading: true # Disables loading of videos for this client (playback is still allowed).
+      searching: true # Disables the ability to search for videos for this client.
 lavalink:
   plugins:
     # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
