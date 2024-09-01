@@ -1,5 +1,9 @@
 # BotGrajacyPieknaMuzyczke
 
+## Ruquirements
+- Python >= 3.10
+- Java >= 17
+
 ## Running bot
 1. Clone the repository: ```git clone https://github.com/kwrzesni/BotGrajacyPieknaMuzyczke.git```
 2. Go to repository folder: ```cd BotGrajacyPieknaMuzyczke```
