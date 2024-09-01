@@ -14,7 +14,9 @@
 7. Go to Lavalink directory: ```cd Lavalink```
 8. Start Lavalink process in background: ```java -jar Lavalink.jar > /dev/null 2>&1 &```
 9. Go back to previous directory: ```cd ..```
-10. Install screen: ```sudo apt install screen```
-11. Start new screen session: ```screen```
-12. Run the bot: ```python main.py```
-13. Detach current screen session: Press: <kbd>Ctrl</kbd>+<kbd>A</kbd>+<kbd>D</kbd>
+10. Run the bot  in background: ```python main.py > /dev/null 2>&1 &```
+11. Leave session: Press: <kbd>Ctrl</kbd>+<kbd>D</kbd>
+
+## Stopping bot
+1. Kill all python processes: ```killall python3.10```
+2. Kill all java processes: ```killall java```
