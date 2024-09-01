@@ -8,7 +8,7 @@
 1. Clone the repository: ```git clone https://github.com/kwrzesni/BotGrajacyPieknaMuzyczke.git```
 2. Go to repository folder: ```cd BotGrajacyPieknaMuzyczke```
 3. Create virtual enviroment: ```python -m venv SrodowiskoMuzyczne```
-4. Source virtual enviroment: ```source SrodowiskoMuzyczne/Scripts/activate```
+4. Source virtual enviroment: ```source SrodowiskoMuzyczne/bin/activate```
 5. Install required python packages: ```python -m pip install -r requirements.txt```
 6. Install diffrent pycord version: ```python -m pip install py-cord==2.0.0rc1```
 7. Add .env file with bot token - file format: TOKEN = YOUR_TOKEN
