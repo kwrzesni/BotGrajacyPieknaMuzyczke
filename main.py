@@ -8,6 +8,7 @@ from discord.ext import commands
 bot = discord.Bot()
 channel_to_respond = {}
 wisnia_id = 447457072725098506
+banned_users = []
 
 def create_embed_from_song(song, title, author):
   seconds = song.length // 1000
@@ -40,7 +41,7 @@ async def connect_nodes():
 
 @bot.slash_command(name="play")
 async def play(ctx: discord.ApplicationContext, search: str):
-  if ctx.author.id == wisnia_id:
+  if ctx.author.id in banned_users:
     await ctx.send_response("Niech ci DjUwU zagra jak jesteś taki cwany")
     return
 
