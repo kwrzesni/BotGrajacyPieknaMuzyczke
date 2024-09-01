@@ -12,7 +12,7 @@
 5. Install required python packages: ```python -m pip install -r requirements.txt```
 6. Add .env file with bot token - file format: TOKEN = YOUR_TOKEN
 7. Go to Lavalink directory: ```cd Lavalink```
-8. Start Lavalink process in background: ```Lavalink.jar > /dev/null 2>&1 &```
+8. Start Lavalink process in background: ```java -jar Lavalink.jar > /dev/null 2>&1 &```
 9. Go back to previous directory: ```cd ..```
 10. Install screen: ```sudo apt install screen```
 11. Start new screen session: ```screen```
