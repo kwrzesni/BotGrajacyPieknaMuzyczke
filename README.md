@@ -11,7 +11,7 @@
 4. Source virtual enviroment: ```source SrodowiskoMuzyczne/Scripts/activate```
 5. Install required python packages: ```python -m pip install -r requirements.txt```
 6. Add .env file with bot token - file format: TOKEN = YOUR_TOKEN
-7. Start Lavaling process in background: ```java -jar LavaLink/Lavalink.jar > /dev/null 2>&1 &```
+7. Start Lavalink process in background: ```java -jar LavaLink/Lavalink.jar > /dev/null 2>&1 &```
 8. Install screen: ```sudo apt install screen```
 9. Start new screen session: ```screen```
 10. Run the bot: ```python main.py```
