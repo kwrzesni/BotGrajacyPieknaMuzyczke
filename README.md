@@ -11,8 +11,10 @@
 4. Source virtual enviroment: ```source SrodowiskoMuzyczne/bin/activate```
 5. Install required python packages: ```python -m pip install -r requirements.txt```
 6. Add .env file with bot token - file format: TOKEN = YOUR_TOKEN
-7. Start Lavalink process in background: ```java -jar LavaLink/Lavalink.jar&```
-8. Install screen: ```sudo apt install screen```
-9. Start new screen session: ```screen```
-10. Run the bot: ```python main.py```
-11. Detach current screen session: Press: <kbd>Ctrl</kbd>+<kbd>A</kbd>+<kbd>D</kbd>
+7. Go to Lavalink directory: ```cd Lavalink```
+8. Start Lavalink process in background: ```java -jar Lavalink.jar&```
+9. Go back to previous directory: ```cd ..```
+10. Install screen: ```sudo apt install screen```
+11. Start new screen session: ```screen```
+12. Run the bot: ```python main.py```
+13. Detach current screen session: Press: <kbd>Ctrl</kbd>+<kbd>A</kbd>+<kbd>D</kbd>
