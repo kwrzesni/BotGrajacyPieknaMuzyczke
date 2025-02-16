@@ -5,6 +5,9 @@ server: # REST and WS server
     enabled: false # Whether to enable HTTP/2 support
 plugins:
   youtube:
+    pot:
+      token: "MpQBUVfjR2te9PlRb2XUu1gMXSt5c30d6kvfBHALSuYgUvWilrNcvXptojiuZN4nhJ5eG_nG1bPkhpSEC_ZymahBraQyT9Owt12G-D55A6x2pBOQORqnwtC_l9W0R5UHL2PmelatW4liOyI5NmikhVQZRDB9viphziUyx116Jc8bKhxXZ28luIMeo0Hx-ibbjUHHg6LYIw=="
+      visitorData: "CgtMVm5iWGRzcW1oUSjRq9S4BjIiCgJQTBIcEhgSFhMLFBUWFwwYGRobHB0eHw4PIBAREiEgNw%3D%3D"
     enabled: true # Whether this source can be used.
     allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
     allowDirectVideoIds: true # Whether just video IDs can match. If false, only complete URLs will be loaded.
@@ -12,10 +15,12 @@ plugins:
     # The clients to use for track loading. See below for a list of valid clients.
     # Clients are queried in the order they are given (so the first client is queried first and so on...)
     clients:
+      - MWEB
+      - ANDROID_VR
+      - WEB
       - TVHTML5EMBEDDED
       - MUSIC
       - ANDROID_TESTSUITE
-      - WEB
 
     # You can configure individual clients with the following.
     # Any options or clients left unspecified will use their default values
@@ -29,16 +34,20 @@ plugins:
     # ---------------- WARNING ----------------
     WEB: # names are specified as they are written below under "Available Clients".
       # This will disable using the WEB client for video playback.
-      playback: false
+      playlistLoading: true # Disables loading of playlists and mixes for this client.
+      videoLoading: true # Disables loading of videos for this client (playback is still allowed).
+      searching: true # Disables the ability to search for videos for this client.
     TVHTML5EMBEDDED:
       # The below config disables everything except playback for this client.
       playlistLoading: true # Disables loading of playlists and mixes for this client.
       videoLoading: true # Disables loading of videos for this client (playback is still allowed).
       searching: true # Disables the ability to search for videos for this client.
+    oauth:
+      enable: true
 lavalink:
   plugins:
     # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.4.0"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
       snapshot: false # Set to true if you want to use a snapshot version.
   server:
     password: "youshallnotpass"
@@ -51,7 +60,7 @@ lavalink:
       vimeo: true
       nico: true
       http: true # warning: keeping HTTP enabled without a proxy configured could expose your server's IP address.
-      local: false
+      local: true
     filters: # All filters are enabled by default
       volume: true
       equalizer: true
