@@ -1,13 +1,12 @@
 #!/bin/bash
+bot_pid=$(~/pid_bot.sh)
+lavalink_pid=$(~/pid_lavalink.sh)
 
-lavalink_pid=$(ps -eo pid,command | grep java | grep Lavalink.jar | cut -d ' ' -f 1)
-if [[ -n "$lavalink_pid" ]]; then
-    kill $lavalink_pid
-    echo Lavalink stopped
+if [[ ! -z $bot_pid ]]; then
+        kill $bot_pid
 fi
-python_pid=$(ps -eo pid,command | grep python | grep BotGrajacyPieknaMuzyczke.py | cut -d ' ' -f 1)
-if [[ -n "$python_pid" ]]; then
-    kill $python_pid
-    echo BotGrajacyPieknaMuzyczke stopped
+
+if [[ ! -z $lavalink_pid ]]; then
+        kill $lavalink_pid
 fi
 

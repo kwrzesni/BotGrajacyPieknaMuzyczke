@@ -1,67 +1,194 @@
 server: # REST and WS server
   port: 2333
-  address: 127.0.0.1
+  address: 0.0.0.0
   http2:
     enabled: false # Whether to enable HTTP/2 support
 plugins:
   youtube:
-    pot:
-      token: "MpQBUVfjR2te9PlRb2XUu1gMXSt5c30d6kvfBHALSuYgUvWilrNcvXptojiuZN4nhJ5eG_nG1bPkhpSEC_ZymahBraQyT9Owt12G-D55A6x2pBOQORqnwtC_l9W0R5UHL2PmelatW4liOyI5NmikhVQZRDB9viphziUyx116Jc8bKhxXZ28luIMeo0Hx-ibbjUHHg6LYIw=="
-      visitorData: "CgtMVm5iWGRzcW1oUSjRq9S4BjIiCgJQTBIcEhgSFhMLFBUWFwwYGRobHB0eHw4PIBAREiEgNw%3D%3D"
-    enabled: true # Whether this source can be used.
-    allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
-    allowDirectVideoIds: true # Whether just video IDs can match. If false, only complete URLs will be loaded.
-    allowDirectPlaylistIds: true # Whether just playlist IDs can match. If false, only complete URLs will be loaded.
-    # The clients to use for track loading. See below for a list of valid clients.
-    # Clients are queried in the order they are given (so the first client is queried first and so on...)
-    clients:
-      - MWEB
-      - ANDROID_VR
-      - WEB
-      - TVHTML5EMBEDDED
-      - MUSIC
-      - ANDROID_TESTSUITE
-
-    # You can configure individual clients with the following.
-    # Any options or clients left unspecified will use their default values
-    # for those individual clients.
-    # Client configurations will ONLY take effect if the client is registered above,
-    # otherwise they are ignored.
-    # ---------------- WARNING ----------------
-    # This part of the config is for DEMONSTRATION PURPOSES ONLY!
-    # Do NOT use this config before understanding what the options do.
-    # You do NOT need to copy this config just because it is published here.
-    # ---------------- WARNING ----------------
-    WEB: # names are specified as they are written below under "Available Clients".
-      # This will disable using the WEB client for video playback.
-      playlistLoading: true # Disables loading of playlists and mixes for this client.
-      videoLoading: true # Disables loading of videos for this client (playback is still allowed).
-      searching: true # Disables the ability to search for videos for this client.
-    TVHTML5EMBEDDED:
-      # The below config disables everything except playback for this client.
-      playlistLoading: true # Disables loading of playlists and mixes for this client.
-      videoLoading: true # Disables loading of videos for this client (playback is still allowed).
-      searching: true # Disables the ability to search for videos for this client.
+    enabled: true
     oauth:
-      enable: true
+      enabled: false
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients:
+      - "TV"
+      - "TVHTML5EMBEDDED"
+      - "WEB"
+      - "MWEB"
+      - "WEBEMBEDDED"
+      - "MUSIC"
+      - "ANDROID_VR"
+      - "ANDROID_MUSIC"
+      - "IOS"
+    clientOptions:
+      TV: #Outh2 Client
+        playback: true #Requires sign-in (Outh2)
+        playlistLoading: false
+        searching: false
+        videoLoading: false
+      TVHTML5EMBEDDED: #Outh2 Client
+        playback: true #Requires sign-in (Outh2)
+        playlistLoading: false
+        searching: true
+        videoLoading: true
+      WEB:
+        playback: true
+        playlistLoading: true
+        searching: true
+        videoLoading: true
+      MWEB:
+        playback: true
+        playlistLoading: true
+        searching: true
+        videoLoading: true
+      WEBEMBEDDED:
+        playback: true
+        playlistLoading: false
+        searching: false
+        videoLoading: true
+      MUSIC:
+        playback: false
+        playlistLoading: false
+        searching: true
+        videoLoading: false
+      ANDROID_VR:
+        playback: true
+        playlistLoading: true
+        searching: true
+        videoLoading: true
+      ANDROID_MUSIC:
+        playback: true
+        playlistLoading: false
+        searching: true
+        videoLoading: true
+      IOS:
+        playback: true
+        playlistLoading: true
+        searching: true
+        videoLoading: true
+  jiosaavn:
+    apiURL: "https://jiosaavn-plugin-api.vercel.app/api" # JioSaavn API URL
+    playlistTrackLimit: 50 # The maximum number of tracks to return from given playlist (default 50 tracks)
+    recommendationsTrackLimit: 10 # The maximum number of track to return from recommendations (default 10 tracks)
+  lavalyrics:
+    # sources is used to sort the different lyrics sources by priority (from highest to lowest)
+    sources:
+      - spotify
+      - youtube
+      - deezer
+      - yandexMusic
+  lavasrc:
+    providers:
+      - "scsearch:%QUERY%"
+      # - "dzisrc:%ISRC%"
+      # - "dzsearch:%QUERY%"
+      - "ytsearch:\"%ISRC%\""
+      - "ytsearch:%QUERY%"
+    sources:
+      spotify: false # Enable Spotify source
+      applemusic: false # Enable Apple Music source
+      deezer: false # Enable Deezer source
+      yandexmusic: false # Enable Yandex Music source
+      flowerytts: false # Enable Flowery TTS source
+      youtube: true # Enable YouTube search source (https://github.com/topi314/LavaSearch)
+      vkmusic: false # Enable Vk Music source
+      tidal: false # Enable Tidal source
+      qobuz : false # Enabled qobuz source
+    lyrics-sources:
+      spotify: false # Enable Spotify lyrics source
+      deezer: false # Enable Deezer lyrics source
+      youtube: true # Enable YouTube lyrics source
+      yandexmusic: false # Enable Yandex Music lyrics source
+      vkmusic: false # Enable Vk Music lyrics source
+    spotify:
+      clientId: "your client id"
+      clientSecret: "your client secret"
+      # spDc: "your sp dc cookie"
+      countryCode: "US"
+      playlistLoadLimit: 3 # The number of pages at 100 tracks each
+      albumLoadLimit: 2 # The number of pages at 50 tracks each
+      localFiles: false
+      resolveArtistsInSearch: true
+    applemusic:
+      countryCode: "US"
+      mediaAPIToken: "your apple music api token"
+      playlistLoadLimit: 3 # The number of pages at 300 tracks each
+      albumLoadLimit: 3 # The number of pages at 300 tracks each
+    deezer:
+      masterDecryptionKey: "your master decryption key"
+      arl: "your deezer arl" # the arl cookie used for accessing the deezer api this does not appear to be optional anymore
+      formats: [ "FLAC", "MP3_320", "MP3_256", "MP3_128", "MP3_64", "AAC_64" ]
+    yandexmusic:
+      accessToken: "your access token"
+      playlistLoadLimit: 1 # The number of pages at 100 tracks each
+      albumLoadLimit: 1 # The number of pages at 50 tracks each
+      artistLoadLimit: 1 # The number of pages at 10 tracks each
+    flowerytts:
+      voice: "Olivia" # (case-sensitive) get default voice from here https://api.flowery.pw/v1/tts/voices
+      translate: false # whether to translate the text to the native language of voice
+      silence: 0 # the silence parameter is in milliseconds. Range is 0 to 10000. The default is 0.
+      speed: 1.0 # the speed parameter is a float between 0.5 and 10. The default is 1.0. (0.5 is half speed, 2.0 is double speed, etc.)
+      audioFormat: "mp3" # supported formats are: mp3, ogg_opus, ogg_vorbis, aac, wav, and flac. Default format is mp3
+    youtube:
+      countryCode: "US" # the country code you want to use for searching & lyrics. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+      language: "en" # the language code you want to use for searching & lyrics. See https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes
+    vkmusic:
+      userToken: "your user token"
+      playlistLoadLimit: 1 # The number of pages at 50 tracks each
+      artistLoadLimit: 1 # The number of pages at 10 tracks each
+      recommendationsLoadLimit: 10 # Number of tracks
+    tidal:
+      countryCode: "US" # the country code for accessing region-specific content on Tidal (ISO 3166-1 alpha-2).
+      searchLimit: 6 # How many search results should be returned
+      token: "your user token" # the token used for accessing the tidal api.
+    qobuz:
+      userOauthToken : "your user oauth token" # This token is needed for authorization in the api. Guide: https://github.com/topi314/LavaSrc#qobuz
+      #appId : optional (Only pass it when you are using an old userOauthToken)
+      #appSecret : optional (Only pass it when you are using an old userOauthToken)
+  dunctebot:
+    ttsLanguage: 'pl'
+    sources:
+      getyarn: true # www.getyarn.io
+      clypit: true # www.clyp.it
+      tts: true # speak:Words to speak
+      pornhub: true # should be self-explanatory
+      reddit: true # should be self-explanatory
+      ocremix: true # www.ocremix.org
+      tiktok: true # tiktok.com
+      mixcloud: true # mixcloud.com
+      soundgasm: true # soundgasm.net
+      pixeldrain: true # pixeldrain.com
 lavalink:
   plugins:
-    # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
-      snapshot: false # Set to true if you want to use a snapshot version.
+    - dependency: "com.github.appujet:jiosaavn-plugin:1.0.3"
+      repository: "https://jitpack.io"
+    - dependency: "com.dunctebot:skybot-lavalink-plugin:1.7.0"
+      snapshot: false
+    - dependency: "com.github.topi314.lavasearch:lavasearch-plugin:1.0.0"
+      snapshot: false
+    - dependency: "com.github.topi314.lavalyrics:lavalyrics-plugin:1.0.0"
+      snapshot: false
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.6.0"
+      snapshot: false
+    - dependency: "com.github.topi314.sponsorblock:sponsorblock-plugin:3.0.1"
+      snapshot: false
+    - dependency: "dev.lavalink.youtube:youtube-plugin:c97016c55280af59ddf799b7f0c20630e6472fd4"
+      snapshot: true
+  pluginsDir: './plugins'
   server:
     password: "youshallnotpass"
     sources:
-      # The default Youtube source is now deprecated and won't receive further updates. Please use https://github.com/lavalink-devs/youtube-source#plugin instead.
-      youtube: false
+      youtube: false # disable youtube on lavalink to use youtube-source
       bandcamp: true
       soundcloud: true
       twitch: true
       vimeo: true
+      mixer: true
       nico: true
       http: true # warning: keeping HTTP enabled without a proxy configured could expose your server's IP address.
       local: true
-    filters: # All filters are enabled by default
+    filters:
       volume: true
       equalizer: true
       karaoke: true
@@ -72,14 +199,15 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-    bufferDurationMs: 400 # The duration of the NAS buffer. Higher values fare better against longer GC pauses. Duration <= 0 to disable JDA-NAS. Minimum of 40ms, lower values may introduce pauses.
-    frameBufferDurationMs: 5000 # How many milliseconds of audio to keep buffered
-    opusEncodingQuality: 10 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
-    resamplingQuality: LOW # Quality of resampling operations. Valid values are LOW, MEDIUM and HIGH, where HIGH uses the most CPU.
-    trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck. A track is stuck if does not return any audio data.
-    useSeekGhosting: true # Seek ghosting is the effect where whilst a seek is in progress, the audio buffer is read from until empty, or until seek is ready.
-    youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
-    playerUpdateInterval: 5 # How frequently to send player updates to clients, in seconds
+    bufferDurationMs: 225
+    frameBufferDurationMs: 5000
+    opusEncodingQuality: 5
+    resamplingQuality: MEDIUM
+    trackStuckThresholdMs: 5000
+    youtubePlaylistLoadLimit: 3
+    playerUpdateInterval: 5
+    nonAllocatingFrameBuffer: false
+    useSeekGhosting: true
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
@@ -89,9 +217,9 @@ lavalink:
       #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
       #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
       #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
-    #youtubeConfig: # Required for avoiding all age restrictions by YouTube, some restricted videos still can be played without.
-      #email: "" # Email of Google account
-      #password: "" # Password of Google account
+    youtubeConfig: # Required for avoiding all age restrictions by YouTube, some restricted videos still can be played without.
+      email: "your account mail" # Email of Google account
+      password: "your account password" # Password of Google account
     #httpConfig: # Useful for blocking bad-actors from ip-grabbing your music node and attacking it, this way only the http proxy will be attacked
       #proxyHost: "localhost" # Hostname of the proxy, (ip or domain)
       #proxyPort: 3128 # Proxy port, 3128 is the default for squidProxy
@@ -106,28 +234,42 @@ metrics:
 sentry:
   dsn: ""
   environment: ""
-#  tags:
-#    some_key: some_value
-#    another_key: another_value
 
 logging:
   file:
+    max-history: 5
+    max-size: 10MB
     path: ./logs/
-
   level:
+    # Set this to DEBUG to enable more detailed logging. Please note that this will likely spam your console.
     root: INFO
+    # Set this to DEBUG to enable more detailed logging from Lavalink.
     lavalink: INFO
+
+    # Set this to TRACE to see all WebSocket messages.
+    lavalink.server.io.SocketContext: OFF
+    # Log all track exceptions (COMMON, SUSPICIOUS & FAULT). Set to DEBUG to enable detailed logging.
+    com.sedmelluq.discord.lavaplayer.tools.ExceptionTools: OFF
+    # Set to DEBUG to enable detailed logging of HTTP requests and responses.
+    com.sedmelluq.discord.lavaplayer.tools.io.PersistentHttpStream: OFF
+    # Set to DEBUG to enable detailed logging of YouTube HTTP requests and responses.
+    com.sedmelluq.discord.lavaplayer.source.youtube.YoutubePersistentHttpStream: OFF
+    # Set to DEBUG to enable detailed logging for the LavaSrc plugin.
+    com.github.topi314.lavasrc.LavaSrcTools: OFF
+    # Set to DEBUG to enable detailed logging for the YouTube audio source manager.
+    dev.lavalink.youtube.YoutubeAudioSourceManager: OFF
+    # Youtube Oauth2 Handle logs
+    dev.lavalink.youtube.http.YoutubeOauth2Handler: INFO
 
   request:
     enabled: true
     includeClientInfo: true
-    includeHeaders: false
+    includeHeaders: true
     includeQueryString: true
     includePayload: true
     maxPayloadLength: 10000
 
-
   logback:
     rollingpolicy:
-      max-file-size: 1GB
-      max-history: 30
+      max-file-size: 10MB
+      max-history: 5

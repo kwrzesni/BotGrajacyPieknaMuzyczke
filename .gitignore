@@ -1,3 +1,9 @@
 LavaLink/logs
 SrodowiskoMuzyczne
-.env
+LavaLink/plugins/
+config/
+tracks/
+.*
+!.gitignore
+*.txt
+!requirements.txt

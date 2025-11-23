@@ -1,15 +1,10 @@
 #!/bin/bash
-
-cd /root/BotGrajacyPieknaMuzyczke/LavaLink
-lavalink_pid=$(ps -eo pid,command | grep java | grep Lavalink.jar | cut -d ' ' -f 1)
-if [[ -z "$lavalink_pid" ]]; then
-    java -jar Lavalink.jar &> /dev/null &
-    echo Lavalink started
+bot_pid=$(~/pid_bot.sh)
+lavalink_pid=$(~/pid_lavalink.sh)
+if [[ -z $bot_pid ]] && [[ ! -z $lavalink_pid ]]; then
+	kill $lavalink_pid
 fi
-cd ..
-python_pid=$(ps -eo pid,command | grep python | grep BotGrajacyPieknaMuzyczke.py | cut -d ' ' -f 1)
-if [[ -z "$python_pid" ]]; then
-    source SrodowiskoMuzyczne/bin/activate
-    python BotGrajacyPieknaMuzyczke.py &> /dev/null &
-    echo BotGrajacyPieknaMuzyczke started
+
+if [[ -z $bot_pid ]]; then
+        python ~/BotGrajacyPieknaMuzyczke.py > logs.txt 2> errors.txt &
 fi
