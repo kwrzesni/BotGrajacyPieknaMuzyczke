@@ -400,11 +400,11 @@ async def play(ctx: discord.ApplicationContext, search: str):
         song._artwork = tokens[3]
         song._length = int(tokens[4])
         await handle_song(vc, ctx.guild, song, isPlaying)
-        return await msg.edit("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
+        return await msg.edit(embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
 
     songs = await wavelink.Playable.search(search)
     if not songs:
-        return await msg.edit("", embed=create_one_line_embed("Nie znalazłem twego utworu"))
+        return await msg.edit(embed=create_one_line_embed("Nie znalazłem twego utworu"))
 
     channel_to_respond[ctx.guild] = ctx.channel
     if not vc:
@@ -418,11 +418,11 @@ async def play(ctx: discord.ApplicationContext, search: str):
             await handle_song(vc, ctx.guild, song, isPlaying)
         except Exception as e:
             print(e)
-        return await msg.edit("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
+        return await msg.edit(embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
     for i in range(songs.selected, len(songs)):
         await handle_song(vc, ctx.guild, songs[i], isPlaying)
         isPlaying = True
-    return await msg.edit("", embed=create_embed_from_playlist(songs, "Gram" if not isPlaying else "Kolejkuję", ctx.author, search))
+    return await msg.edit(embed=create_embed_from_playlist(songs, "Gram" if not isPlaying else "Kolejkuję", ctx.author, search))
 
 
 @bot.slash_command(name="fplay")
