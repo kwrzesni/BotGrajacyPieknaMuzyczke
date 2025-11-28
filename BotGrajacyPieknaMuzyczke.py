@@ -7,18 +7,44 @@ import pathlib
 import yt_dlp
 import subprocess
 import requests
-import platform
-import signal
 from moviepy import VideoFileClip
 from discord.ext import commands
+import re
+
+
+def human_size(size):
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+
+
+def from_human_size_to_bytes(size: str):
+    ind = 0
+    while ind < len(size) and size[ind].isdigit():
+        ind += 1
+    value = int(size[:ind]) if ind != 0 else 0
+    unit = size[ind:].upper().strip()
+    if unit == "TB":
+        return value * (1024 ** 4)
+    if unit == "GB":
+        return value * (1024 ** 3)
+    if unit == "MB":
+        return value * (1024 ** 2)
+    if unit == "KB":
+        return value * (1024 ** 1)
+    return value
+
 
 dotenv.load_dotenv()
 TOKEN = str(os.getenv("TOKEN"))
 TRACKS_DIR = str(os.getenv("TRACKS_DIR"))
+TRACKS_DIR_MAX_SIZE = from_human_size_to_bytes(os.getenv("TRACKS_DIR_MAX_SIZE"))
 CONFIGURATIONS_DIR = str(os.getenv("CONFIGURATION_DIR"))
 DOWNLOADS_FILE = str(os.getenv("DOWNLOADS_FILE"))
 LAVALINK_DIR = str(os.getenv("LAVALINK_DIR"))
-LAVALINK_REPO = 'https://api.github.com/repos/lavalink-devs/youtube-source'
+COOKIES_PATH = str(os.getenv("COOKIES_PATH"))
+LAVALINK_REPO = "https://api.github.com/repos/lavalink-devs/youtube-source"
 MAX_PLAYLIST_EMBED_SIZE = 5
 MAX_QUEUE_EMBED_SIZE = 7
 MAX_LIST_SIZE = 20
@@ -30,9 +56,12 @@ configurations = {}
 lavalink_process = None
 lavalink_subprocess_pid = None
 wavelink_node = None
+lavalink_ready = False
+
 
 def start_lavalink_process():
     return subprocess.Popen(["java", "-jar", "Lavalink.jar"], cwd=LAVALINK_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 
 class Configuration:
     DEFAULT_AUTOPLAY = False
@@ -112,9 +141,9 @@ class Configuration:
 
 
 def get_ip_address():
-    key1 = 'address:'
-    key2 = 'port:'
-    with open(os.path.join(LAVALINK_DIR, 'application.yml'), 'r') as file:
+    key1 = "address:"
+    key2 = "port:"
+    with open(os.path.join(LAVALINK_DIR, "application.yml"), "r") as file:
         data = file.read()
     start1 = data.find(key1) + len(key1)
     end1 = data.find("\n", start1)
@@ -148,60 +177,97 @@ async def disconnect_nodes():
     await wavelink_node.close()
 
 
+def is_link_to_playlist(link):
+    return "&list" in link
+
+
+def format_link(link):
+    if is_link_to_playlist(link):
+        return link
+    key = "youtu.be/"
+    if key in link:
+        start = link.find(key) + len(key)
+        end = link.find("?", start)
+        return f"https://www.youtube.com/watch?v={link[start:end] if end != -1 else link[start:]}"
+    key = "youtube"
+    if key in link:
+        key = "?v="
+        start = link.find(key) + len(key)
+        end = link.find("&", start)
+        return f"https://www.youtube.com/watch?v={link[start:end] if end != -1 else link[start:]}"
+    return link
+
+
+def get_memory_usage():
+    total_size = 0
+    for root, dirs, files in os.walk(TRACKS_DIR):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            total_size += os.path.getsize(filepath)
+    return total_size
+
+
 def created_downloads_file_if_not_exist():
     if not os.path.isfile(DOWNLOADS_FILE):
         open(DOWNLOADS_FILE, "a").close()
 
 
-def get_downloaded_by_url(url):
+def add_downloaded(url, name, info_dict):
     created_downloads_file_if_not_exist()
-    with open(DOWNLOADS_FILE, "r") as file:
-        for line in file.readlines():
-            line = line.strip()
-            if line.split(",")[0] == url:
-                return line
-    return None
+    url = url
+    name = name
+    title = info_dict["title"] if "title" in info_dict else ""
+    artwork = info_dict["thumbnail"] if "thumbnail" in info_dict else ""
+    length = 1000 * info_dict["duration"] if "duration" in info_dict else 0
+    with open(DOWNLOADS_FILE, "a", encoding="utf-8") as file:
+        file.write(f"{url};{name};{title};{artwork};{length}\n")
 
 
 def get_downloaded_by_name(name):
     created_downloads_file_if_not_exist()
-    with open(DOWNLOADS_FILE, "r") as file:
+    with open(DOWNLOADS_FILE, "r", encoding="utf-8") as file:
         for line in file.readlines():
             line = line.strip()
-            if line.split(",")[1] == name:
+            if line.split(";")[1] == name:
                 return line
     return None
 
 
-def add_downloaded(url, name):
+def get_downloaded_by_url(url):
     created_downloads_file_if_not_exist()
-    with open(DOWNLOADS_FILE, "a") as file:
-        file.write(url + "," + name + "\n")
+    with open(DOWNLOADS_FILE, "r", encoding="utf-8") as file:
+        for line in file.readlines():
+            line = line.strip()
+            if line.split(";")[0] == url:
+                return line
+    return None
 
 
 def change_downloaded(old_name, new_name):
     created_downloads_file_if_not_exist()
     out = ""
-    with open(DOWNLOADS_FILE, "r") as file:
+    with open(DOWNLOADS_FILE, "r", encoding="utf-8") as file:
         for line in file.readlines():
             line = line.strip()
-            if line.split(",")[1] == old_name:
-                out += line.split(",")[0] + "," + new_name + "\n"
+            tokens = line.split(";")
+            if tokens[1] == old_name:
+                tokens[1] = new_name
+                out += ";".join(tokens) + "\n"
             else:
                 out += line + "\n"
-    with open(DOWNLOADS_FILE, "w") as file:
+    with open(DOWNLOADS_FILE, "w", encoding="utf-8") as file:
         file.write(out)
 
 
 def remove_downloaded(name):
     created_downloads_file_if_not_exist()
     out = ""
-    with open(DOWNLOADS_FILE, "r") as file:
+    with open(DOWNLOADS_FILE, "r", encoding="utf-8") as file:
         for line in file.readlines():
             line = line.strip()
-            if line.split(",")[1] != name:
+            if line.split(";")[1] != name:
                 out += line + "\n"
-    with open(DOWNLOADS_FILE, "w") as file:
+    with open(DOWNLOADS_FILE, "w", encoding="utf-8") as file:
         file.write(out)
 
 
@@ -277,7 +343,7 @@ def get_lavalink_commits():
     response = requests.get(url, headers={"Accept": "application/vnd.github.v3+json"})
     if response.status_code != 200:
         return [], response.status_code
-    return [commit['sha'] for commit in response.json()], response.status_code
+    return [commit["sha"] for commit in response.json()], response.status_code
 
 
 def get_lavalink_releases():
@@ -285,17 +351,17 @@ def get_lavalink_releases():
     response = requests.get(url, headers={"Accept": "application/vnd.github.v3+json"})
     if response.status_code != 200:
         return [], response.status_code
-    return [(tag['name'], tag['commit']['sha']) for tag in response.json()], response.status_code
+    return [(tag["name"], tag["commit"]["sha"]) for tag in response.json()], response.status_code
 
 
-async def handle_song(vc, ctx, song, isPlaying):
+async def handle_song(vc, guild, song, isPlaying):
     if isPlaying:
         vc.queue.put(song)
     else:
-        if configurations[ctx.guild].autoplay:
+        if configurations[guild].autoplay:
             await vc.play(song, populate=True, max_populate=1)
             if vc.auto_queue:
-                recomended_songs[ctx.guild] = vc.auto_queue[0]
+                recomended_songs[guild] = vc.auto_queue[0]
                 vc.auto_queue.clear()
         else:
             await vc.play(song)
@@ -303,19 +369,23 @@ async def handle_song(vc, ctx, song, isPlaying):
 
 @bot.slash_command(name="play")
 async def play(ctx: discord.ApplicationContext, search: str):
+    if not lavalink_ready:
+        return await ctx.send_response("", embed=create_one_line_embed("Spokojnie jeszcze nie wszystko gotowe"))
+
+    search = format_link(search)
     if ctx.author.voice is None:
         return await ctx.send_response("", embed=create_one_line_embed("Nie ma cię na kanale debilu"))
 
-    print("1", flush=True)
     vc = typing.cast(wavelink.Player, ctx.voice_client)
     if vc is not None and vc.channel.id != ctx.author.voice.channel.id:
         return await ctx.send_response("", embed=create_one_line_embed("Jesteś na innym kanale niż ja bandyto"))
 
-    print(2, flush=True)
+    msg = await ctx.send_response("", embed=create_one_line_embed("..."))
+
     configuration = configurations[ctx.guild]
     record = get_downloaded_by_url(search)
     if record is not None:
-        name = record.split(",")[1]
+        name = record.split(";")[1]
         songs = await wavelink.Playable.search(os.path.join(TRACKS_DIR, name), source=None)
         channel_to_respond[ctx.guild] = ctx.channel
         if not vc:
@@ -323,16 +393,18 @@ async def play(ctx: discord.ApplicationContext, search: str):
             vc.autoplay = wavelink.AutoPlayMode.disabled
             vc.filters.timescale.set(speed=configuration.speed, pitch=configuration.pitch, rate=configuration.rate)
         isPlaying = vc.playing
+        tokens = record.split(";")
         song = songs[0]
-        song._title = name
-        song._uri = None
-        await handle_song(vc, ctx, song, isPlaying)
-        return await ctx.send_response("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję",
-                                                                        ctx.author))
+        song._uri = tokens[0]
+        song._title = tokens[2]
+        song._artwork = tokens[3]
+        song._length = int(tokens[4])
+        await handle_song(vc, ctx.guild, song, isPlaying)
+        return await msg.edit("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
 
     songs = await wavelink.Playable.search(search)
     if not songs:
-        return await ctx.send_response("", embed=create_one_line_embed("Nie znalazłem twego utworu"))
+        return await msg.edit("", embed=create_one_line_embed("Nie znalazłem twego utworu"))
 
     channel_to_respond[ctx.guild] = ctx.channel
     if not vc:
@@ -343,20 +415,21 @@ async def play(ctx: discord.ApplicationContext, search: str):
     if songs[0].playlist is None:
         song = songs[0]
         try:
-            await handle_song(vc, ctx, song, isPlaying)
-        except ...:
-            pass
-        return await ctx.send_response("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję",
-                                                                        ctx.author))
+            await handle_song(vc, ctx.guild, song, isPlaying)
+        except Exception as e:
+            print(e)
+        return await msg.edit("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
     for i in range(songs.selected, len(songs)):
-        await handle_song(vc, ctx, songs[i], isPlaying)
+        await handle_song(vc, ctx.guild, songs[i], isPlaying)
         isPlaying = True
-    return await ctx.send_response("", embed=create_embed_from_playlist(songs, "Gram" if not isPlaying else "Kolejkuję",
-                                                                        ctx.author, search))
+    return await msg.edit("", embed=create_embed_from_playlist(songs, "Gram" if not isPlaying else "Kolejkuję", ctx.author, search))
 
 
 @bot.slash_command(name="fplay")
 async def fplay(ctx: discord.ApplicationContext, search: str):
+    if not lavalink_ready:
+        return await ctx.send_response("", embed=create_one_line_embed("Spokojnie jeszcze nie wszystko gotowe"))
+
     if ctx.author.voice is None:
         return await ctx.send_response("", embed=create_one_line_embed("Nie ma cię na kanale debilu"))
 
@@ -385,7 +458,14 @@ async def fplay(ctx: discord.ApplicationContext, search: str):
     song = songs[0]
     song._title = candidates[0]
     song._uri = None
-    await handle_song(vc, ctx, song, isPlaying)
+    record = get_downloaded_by_name(search)
+    if record is not None:
+        tokens = record.split(";")
+        song._uri = tokens[0]
+        song._title = tokens[2]
+        song._artwork = tokens[3]
+        song._length = int(tokens[4])
+    await handle_song(vc, ctx.guild, song, isPlaying)
     await ctx.send_response("",
                             embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", ctx.author))
 
@@ -703,23 +783,31 @@ async def upload(ctx: discord.ApplicationContext, file: discord.Attachment):
 
 @bot.slash_command(name="download")
 async def download(ctx: discord.ApplicationContext, url: str, name: str):
+    if ";" in name:
+        return await ctx.send_response("", embed=create_one_line_embed(f"Ale nie wpisuj mi takich głupich znaczków jak ';' homoseksualisto"))
+    if is_link_to_playlist(url):
+        return await ctx.send_response("", embed=create_one_line_embed(f"Nie będę pobierał playlisty bo to dużo roboty i mi się nie chcę"))
+    url = format_link(url)
     record = get_downloaded_by_url(url)
     if record is not None:
-        return await ctx.send_response("", embed=create_one_line_embed(
-            f"Już kiedyś pobrałem ten utwór i nazwałem go {record.split(',')[1]}"))
+        return await ctx.send_response("", embed=create_one_line_embed(f"Już kiedyś pobrałem ten utwór i nazwałem go {record.split(';')[1]}"))
     if name in os.listdir(TRACKS_DIR):
         return await ctx.send_response("", embed=create_one_line_embed(f"Już posiadam utwór o nazwie {name}"))
+    if get_memory_usage() >= TRACKS_DIR_MAX_SIZE:
+        return await ctx.send_response("", embed=create_one_line_embed(f"Mam już pełny brzuszek i nie będe nic więcej pobierał"))
     msg = await ctx.send_response("", embed=create_one_line_embed(f"Pobieram {url}"))
     try:
         def hook(filename):
             video = VideoFileClip(filename)
             video.audio.write_audiofile("output.mp3")
+            video.close()
             os.rename("output.mp3", os.path.join(TRACKS_DIR, name))
             os.remove(filename)
-            add_downloaded(url, name)
+            info_dict = ydl.extract_info(url, download=False)
+            add_downloaded(url, name, info_dict)
 
-        ydl_opts = {"cookiefile": "cookies.txt", "paths": {"home": "downloads"}, "post_hooks": [hook], "quiet": "True",
-                    "noplaylist": "True", "format": "mp4"}
+        ydl_opts = {"cookiefile": COOKIES_PATH, "paths": {"home": "downloads"}, "post_hooks": [hook], "quiet": "True",
+                    "noplaylist": "True",  "format": "mp4"}
         ydl = yt_dlp.YoutubeDL(ydl_opts)
         ydl.download([url])
         await msg.edit(embed=create_one_line_embed(f"Pobrałem {url}"))
@@ -728,7 +816,7 @@ async def download(ctx: discord.ApplicationContext, url: str, name: str):
 
 
 @bot.slash_command(name="rename")
-async def upload(ctx: discord.ApplicationContext, old_name: str, new_name: str):
+async def rename(ctx: discord.ApplicationContext, old_name: str, new_name: str):
     if old_name not in os.listdir(TRACKS_DIR):
         return await ctx.send_response("", embed=create_one_line_embed(f"Nie posiadam utwór o nazwie {old_name}"))
 
@@ -751,7 +839,7 @@ async def upload(ctx: discord.ApplicationContext, old_name: str, new_name: str):
 
 
 @bot.slash_command(name="remove")
-async def upload(ctx: discord.ApplicationContext, name: str):
+async def remove(ctx: discord.ApplicationContext, name: str):
     if name not in os.listdir(TRACKS_DIR):
         return await ctx.send_response("", embed=create_one_line_embed(f"Nie posiadam utwór o nazwie {name}"))
 
@@ -764,9 +852,9 @@ async def upload(ctx: discord.ApplicationContext, name: str):
                 f"Nie usuwaj utworu który mam w kolejce matole"))
 
     os.remove(os.path.join(TRACKS_DIR, name))
-    await ctx.send_response("", embed=create_one_line_embed(f"Wyjebałem utwór o nazwie \"{name}\""))
     if get_downloaded_by_name(name) is not None:
         remove_downloaded(name)
+    await ctx.send_response("", embed=create_one_line_embed(f"Wyjebałem utwór o nazwie \"{name}\""))
 
 
 @bot.slash_command(name="list")
@@ -818,7 +906,7 @@ async def say(ctx: discord.ApplicationContext, text: str):
     song = song[0]
     song._title = text
     song._uri = None
-    await handle_song(vc, ctx, song, isPlaying)
+    await handle_song(vc, ctx.guild, song, isPlaying)
     await ctx.send_response("", embed=create_embed_from_song(song, "Mówię" if not isPlaying else "Kiedyś powiem",
                                                              ctx.author))
 
@@ -843,7 +931,7 @@ async def version(ctx: discord.ApplicationContext):
             current_commit = release[1]
             break
     if current_release is None:
-        current_release = '-'
+        current_release = "-"
         current_commit = version
     latest_release = releases[0][0]
     latest_commit = commits[0]
@@ -896,7 +984,7 @@ async def update(ctx: discord.ApplicationContext, version: str = ""):
 
     set_lavalink_version(version, is_snapshot)
 
-    global lavalink_process
+    global lavalink_process, lavalink_ready
 
     for vc in bot.voice_clients:
         if channel_to_respond[vc.guild] is not None:
@@ -904,6 +992,7 @@ async def update(ctx: discord.ApplicationContext, version: str = ""):
             channel_to_respond[vc.guild] = None
         await vc.disconnect()
 
+    lavalink_ready = False
     lavalink_process.kill()
     lavalink_process = start_lavalink_process()
 
@@ -925,7 +1014,7 @@ async def leave(ctx: discord.ApplicationContext):
 async def restart(ctx: discord.ApplicationContext):
     await ctx.send_response("", embed=create_one_line_embed(f"Zaczynam restart"))
 
-    global lavalink_process
+    global lavalink_process, lavalink_ready
 
     for vc in bot.voice_clients:
         if channel_to_respond[vc.guild] is not None:
@@ -933,6 +1022,7 @@ async def restart(ctx: discord.ApplicationContext):
             channel_to_respond[vc.guild] = None
         await vc.disconnect()
 
+    lavalink_ready = False
     lavalink_process.kill()
     lavalink_process = start_lavalink_process()
 
@@ -940,12 +1030,32 @@ async def restart(ctx: discord.ApplicationContext):
     await connect_nodes()
 
 
+@bot.slash_command(name="memory")
+async def memory(ctx: discord.ApplicationContext):
+    used_size = min(get_memory_usage(), TRACKS_DIR_MAX_SIZE)
+    free_size = TRACKS_DIR_MAX_SIZE - used_size
+    embed = discord.Embed(
+        title="Pamięć",
+        color=discord.Colour.blurple(),
+    )
+    embed.add_field(name="Wykorzystywana", value=f"{human_size(used_size)}", inline=True)
+    embed.add_field(name="Wolna", value=f"{human_size(free_size)}", inline=True)
+    embed.add_field(name="Całkowita", value=f"{human_size(TRACKS_DIR_MAX_SIZE)}", inline=True)
+    embed.add_field(name="", value=f"{100*used_size//TRACKS_DIR_MAX_SIZE}%", inline=True)
+    embed.add_field(name="", value=f"{100*free_size//TRACKS_DIR_MAX_SIZE}%", inline=True)
+    embed.add_field(name="", value="100%", inline=True)
+    await ctx.send_response("", embed=embed)
+
 
 @bot.event
 async def on_ready():
     await connect_nodes()
 
     global configurations, channel_to_respond
+    if not os.path.exists(TRACKS_DIR):
+        os.mkdir(TRACKS_DIR)
+    if not os.path.exists(CONFIGURATIONS_DIR):
+        os.mkdir(CONFIGURATIONS_DIR)
     default_configuration_path = os.path.join(CONFIGURATIONS_DIR, "default")
     default_configuration = Configuration(default_configuration_path)
     default_configuration.set_as_default()
@@ -961,11 +1071,13 @@ async def on_ready():
 
     await bot.sync_commands(commands=bot.pending_application_commands, method="bulk",
                             guild_ids=[guild.id for guild in bot.guilds], force=True)
-    print('commands synced', flush=True)
+    print("commands synced", flush=True)
 
 
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
+    global lavalink_ready
+    lavalink_ready = True
     print(f"Node with ID {payload.session_id} has connected", flush=True)
     print(f"Resumed session: {payload.resumed}", flush=True)
 
@@ -1000,6 +1112,100 @@ async def on_wavelink_track_end(event: wavelink.TrackEndEventPayload):
             await event.player.play(song)
 
 
+@commands.Cog.listener()
+async def on_wavelink_track_exception(event: wavelink.TrackExceptionEventPayload):
+    channel = channel_to_respond[event.player.guild]
+    if channel is not None:
+        if "youtube" in event.track.uri:
+            embed = create_one_line_embed(f"Dziobany jutjub nie pozwala mi zagrać \"{event.track.title}\", bo: {event.exception['message'] if 'message' in event.exception else 'Chuj wie co'}")
+        else:
+            embed = create_one_line_embed(f"Nie moge zagrać \"{event.track.title}\", bo: {event.exception['message'] if 'message' in event.exception else 'Chuj wie co'}")
+        embed.add_field(name="Pobierz", value="🔽", inline=True)
+        embed.add_field(name="Pobierz i zagraj", value="▶️", inline=True)
+
+        message = await channel.send("", embed=embed)
+        await message.add_reaction("🔽")
+        await message.add_reaction("▶")
+        try:
+            reaction, user = await bot.wait_for("reaction_add", timeout=30.0, check=lambda reaction, user: not user.bot and (reaction.emoji == "🔽" or reaction.emoji == "▶"))
+        except Exception as exception:
+            await message.add_reaction("⛔")
+        else:
+            url = event.track.uri
+            name = re.sub(r"[\U00010000-\U0010FFFF]", "", event.track.title).strip()
+            name = re.sub(r"\s+", " ", name)
+
+            record = get_downloaded_by_url(url)
+            if record is not None:
+                return await channel.send("", embed=create_one_line_embed(
+                    f"Już kiedyś pobrałem ten utwór i nazwałem go {record.split(';')[1]}"))
+            if name in os.listdir(TRACKS_DIR):
+                return await channel[event.player.guild].send("", embed=create_one_line_embed(f"Już posiadam utwór o nazwie {name}"))
+            if get_memory_usage() >= TRACKS_DIR_MAX_SIZE:
+                return await channel[event.player.guild].send("", embed=create_one_line_embed("Mam już pełny brzuszek i nie będe nic więcej pobierał"))
+            msg = await channel.send("", embed=create_one_line_embed(f"Pobieram {url}"))
+            try:
+                def hook(filename):
+                    video = VideoFileClip(filename)
+                    video.audio.write_audiofile("output.mp3")
+                    video.close()
+                    os.rename("output.mp3", os.path.join(TRACKS_DIR, name))
+                    os.remove(filename)
+                    info_dict = ydl.extract_info(url, download=False)
+                    add_downloaded(url, name, info_dict)
+
+                ydl_opts = {"cookiefile": COOKIES_PATH, "paths": {"home": "downloads"},
+                            "post_hooks": [hook], "quiet": "True",
+                            "noplaylist": "True", "format": "mp4"}
+                ydl = yt_dlp.YoutubeDL(ydl_opts)
+                ydl.download([url])
+                await msg.edit(embed=create_one_line_embed(f"Pobrałem {url}"))
+            except Exception as e:
+                await msg.edit(embed=create_one_line_embed(f"Nie udało mi się pobrać {url} - błąd: {e}"))
+
+            if reaction.emoji == "▶":
+                if user.voice is None:
+                    return await channel.send("", embed=create_one_line_embed("Nie ma cię na kanale debilu"))
+
+                configuration = configurations[user.guild]
+                vc = None
+                for voice_client in bot.voice_clients:
+                    if voice_client.guild == user.guild:
+                        vc = voice_client
+                        break
+                if vc is not None and vc.channel.id != user.voice.channel.id:
+                    return await channel.send("",
+                                                   embed=create_one_line_embed("Jesteś na innym kanale niż ja bandyto"))
+
+                candidates = [name]
+                songs = None
+                if candidates:
+                    candidates.sort()
+                    songs = await wavelink.Playable.search(os.path.join(TRACKS_DIR, candidates[0]), source=None)
+                if not songs:
+                    return await channel.send("", embed=create_one_line_embed("Nie znalazłem twego utworu"))
+
+                channel_to_respond[user.guild] = channel
+                if not vc:
+                    vc = await user.voice.channel.connect(cls=wavelink.Player)
+                    vc.autoplay = wavelink.AutoPlayMode.disabled
+                    vc.filters.timescale.set(speed=configuration.speed, pitch=configuration.pitch,
+                                             rate=configuration.rate)
+                isPlaying = vc.playing
+                song = songs[0]
+                song._title = candidates[0]
+                song._uri = None
+                record = get_downloaded_by_name(name)
+                if record is not None:
+                    tokens = record.split(";")
+                    song._uri = tokens[0]
+                    song._title = tokens[2]
+                    song._artwork = tokens[3]
+                    song._length = int(tokens[4])
+                await handle_song(vc, user.guild, song, isPlaying)
+                await channel.send("", embed=create_embed_from_song(song, "Gram" if not isPlaying else "Kolejkuję", user))
+
+
 @bot.event
 async def on_guild_join(guild):
     servers_configurations_path = os.path.join(CONFIGURATIONS_DIR, "servers")
@@ -1011,8 +1217,9 @@ async def on_guild_join(guild):
 
 
 bot.add_listener(on_wavelink_track_end)
+bot.add_listener(on_wavelink_track_exception)
 
 print("lavalink started", flush=True)
-lavalink_process = start_lavalink_process() 
+lavalink_process = start_lavalink_process()
 print("bot run", flush=True)
 bot.run(TOKEN)
