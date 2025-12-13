@@ -1041,8 +1041,8 @@ async def memory(ctx: discord.ApplicationContext):
     embed.add_field(name="Wykorzystywana", value=f"{human_size(used_size)}", inline=True)
     embed.add_field(name="Wolna", value=f"{human_size(free_size)}", inline=True)
     embed.add_field(name="Całkowita", value=f"{human_size(TRACKS_DIR_MAX_SIZE)}", inline=True)
-    embed.add_field(name="", value=f"{100*round(used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
-    embed.add_field(name="", value=f"{100-100*round(used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
+    embed.add_field(name="", value=f"{round(100*used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
+    embed.add_field(name="", value=f"{100-round(100*used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
     embed.add_field(name="", value="100%", inline=True)
     await ctx.send_response("", embed=embed)
 
