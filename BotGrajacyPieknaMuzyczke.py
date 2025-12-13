@@ -458,7 +458,7 @@ async def fplay(ctx: discord.ApplicationContext, search: str):
     song = songs[0]
     song._title = candidates[0]
     song._uri = None
-    record = get_downloaded_by_name(search)
+    record = get_downloaded_by_name(candidates[0])
     if record is not None:
         tokens = record.split(";")
         song._uri = tokens[0]
