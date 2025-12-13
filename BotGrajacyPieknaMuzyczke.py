@@ -1041,8 +1041,8 @@ async def memory(ctx: discord.ApplicationContext):
     embed.add_field(name="Wykorzystywana", value=f"{human_size(used_size)}", inline=True)
     embed.add_field(name="Wolna", value=f"{human_size(free_size)}", inline=True)
     embed.add_field(name="Całkowita", value=f"{human_size(TRACKS_DIR_MAX_SIZE)}", inline=True)
-    embed.add_field(name="", value=f"{100*used_size//TRACKS_DIR_MAX_SIZE}%", inline=True)
-    embed.add_field(name="", value=f"{100*free_size//TRACKS_DIR_MAX_SIZE}%", inline=True)
+    embed.add_field(name="", value=f"{100*round(used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
+    embed.add_field(name="", value=f"{100-100*round(used_size/TRACKS_DIR_MAX_SIZE)}%", inline=True)
     embed.add_field(name="", value="100%", inline=True)
     await ctx.send_response("", embed=embed)
 
@@ -1141,7 +1141,7 @@ async def on_wavelink_track_exception(event: wavelink.TrackExceptionEventPayload
                     f"Już kiedyś pobrałem ten utwór i nazwałem go {record.split(';')[1]}"))
             if name in os.listdir(TRACKS_DIR):
                 return await channel[event.player.guild].send("", embed=create_one_line_embed(f"Już posiadam utwór o nazwie {name}"))
-            if get_memory_usage() >= TRACKS_DIR_MAX_SIZE:
+            if get_/memory_usage() >= TRACKS_DIR_MAX_SIZE:
                 return await channel[event.player.guild].send("", embed=create_one_line_embed("Mam już pełny brzuszek i nie będe nic więcej pobierał"))
             msg = await channel.send("", embed=create_one_line_embed(f"Pobieram {url}"))
             try:
