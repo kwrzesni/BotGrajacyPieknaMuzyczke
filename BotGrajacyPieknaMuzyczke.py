@@ -1141,7 +1141,7 @@ async def on_wavelink_track_exception(event: wavelink.TrackExceptionEventPayload
                     f"Już kiedyś pobrałem ten utwór i nazwałem go {record.split(';')[1]}"))
             if name in os.listdir(TRACKS_DIR):
                 return await channel[event.player.guild].send("", embed=create_one_line_embed(f"Już posiadam utwór o nazwie {name}"))
-            if get_/memory_usage() >= TRACKS_DIR_MAX_SIZE:
+            if get_memory_usage() >= TRACKS_DIR_MAX_SIZE:
                 return await channel[event.player.guild].send("", embed=create_one_line_embed("Mam już pełny brzuszek i nie będe nic więcej pobierał"))
             msg = await channel.send("", embed=create_one_line_embed(f"Pobieram {url}"))
             try:
