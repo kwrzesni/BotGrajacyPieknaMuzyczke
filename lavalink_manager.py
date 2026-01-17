@@ -8,12 +8,6 @@ from enum import Enum
 from pathlib import Path
 
 
-def kill_all_child_processes(process):
-    process = psutil.Process(process.pid)
-    for child_proc in process.children(recursive=True):
-        child_proc.kill()
-
-
 class State(Enum):
     STARTING = "starting"
     READY = "ready"
@@ -53,7 +47,6 @@ class LavalinkManager:
         if self.process is None:
             return
         try:
-            kill_all_child_processes(self.process)
             self.process.kill()
         except Exception:
             pass

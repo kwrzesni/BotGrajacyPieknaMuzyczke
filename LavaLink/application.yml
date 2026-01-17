@@ -199,10 +199,10 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-    bufferDurationMs: 225
-    frameBufferDurationMs: 5000
+    bufferDurationMs: 2000
+    frameBufferDurationMs: 10000
     opusEncodingQuality: 5
-    resamplingQuality: MEDIUM
+    resamplingQuality: HIGH
     trackStuckThresholdMs: 5000
     youtubePlaylistLoadLimit: 3
     playerUpdateInterval: 5
