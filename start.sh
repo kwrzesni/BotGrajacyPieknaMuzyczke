@@ -6,5 +6,5 @@ if [[ -z $bot_pid ]] && [[ ! -z $lavalink_pid ]]; then
 fi
 
 if [[ -z $bot_pid ]]; then
-        python ~/BotGrajacyPieknaMuzyczke.py > logs.txt 2> errors.txt &
+        python ~/bot_grajacy_piekna_muzyczke.py &> /dev/null &
 fi
