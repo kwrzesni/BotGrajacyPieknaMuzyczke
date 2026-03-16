@@ -1,5 +1,4 @@
 LavaLink/logs
-SrodowiskoMuzyczne
 LavaLink/plugins/
 config/
 tracks/
@@ -7,3 +6,4 @@ tracks/
 !.gitignore
 *.txt
 !requirements.txt
+SrodowiskoMuzyczne

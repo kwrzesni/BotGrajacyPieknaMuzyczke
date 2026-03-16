@@ -13,3 +13,4 @@ pip install pydantic_settings
 pip install psutil
 pip install pyyaml
 pip install pydub
+pip install PyNaCl
